@@ -19,7 +19,7 @@ StartBattle() {
     
     try {
         ; 第一轮操作
-        if (GameManager.WaitForText("攻击")) {
+        if (GameManager.WaitForText("TOTAL")) {
             Logger.Log("第一轮操作开始")
             if !isRunning
                 return
@@ -80,7 +80,12 @@ StartBattle() {
             return
         }
 
+        if !isRunning
+            return
+
         Sleep 1000  ; 等待1秒，确保界面稳定
+        MouseHandler.ClientClick(1645,960)  ; 点击
+                sleep 1000
         if !isRunning
             return
         

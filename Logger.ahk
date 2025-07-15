@@ -21,7 +21,7 @@ class Logger {
         FileAppend("[" timestamp "] " msg "`n", Logger.logFile, "UTF-8")
     }
 
-    static Cleanup(days := 7) {
+    static Cleanup(days := 2) {
         cutoff := A_Now
         cutoff := DateAdd(cutoff, -days, "Days")
         cutoff := FormatTime(cutoff, "yyyyMMdd")
