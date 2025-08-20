@@ -19,7 +19,7 @@ StartBattle() {
     
     try {
         ; 第一轮操作
-        if (GameManager.WaitForText("TOTAL")) {
+        if (GameManager.WaitForText("+助战")) {
             Logger.Log("第一轮操作开始")
             if !isRunning
                 return
