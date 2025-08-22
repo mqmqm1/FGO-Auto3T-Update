@@ -61,38 +61,85 @@ class MouseHandler          ; 鼠标操作类
 }
 
 ; ========== OCR文字识别类 ==========
-class OCRHandler            ; OCR文字识别类
-{  
-    static ocrRecognize(targetText) {  ; 接受外部传入的目标文字
-        ImagePutFile("联想模拟器", "BattlePage.png")
-        ocr := RapidOcr({models: A_ScriptDir '\plugin\RapidOCR\models'}, A_ScriptDir '\plugin\RapidOcr\64bit\RapidOcrOnnx.dll')  ; 初始化 OCR
-        res := ocr.ocr_from_file("BattlePage.png", , true)  ; 识别所有文本
+class OCRHandler
+{
+    static ocr := ""  ; 缓存 OCR 对象，避免每次重复初始化
 
-        ; ==== 添加类型判断防止崩溃 ====
-        if !IsObject(res) || res.Length = 0 {
-        return false
-    }
-
-        loop res.Length {
-            block := res[A_Index]   ; 遍历每个识别到的文本块
-            text := block.text       ; 获取识别到的文本
-            x1 := block.boxPoint[1].x  ; 获取文本块的坐标
-            y1 := block.boxPoint[1].y  
-            x2 := block.boxPoint[3].x
-            y2 := block.boxPoint[3].y
-            centerX := (x1 + x2) // 2  ; 计算中心点坐标
-            centerY := (y1 + y2) // 2  ; 计算中心点坐标
-
-            
-
-            if (text = targetText) {  ; 如果识别到的文本等于外部传入的目标文字
-                return {x: centerX, y: centerY}  ; 返回识别到的坐标
-            }
-            
+    ; 初始化 OCR，仅加载一次，提高性能
+    static InitOCR() {
+        if (OCRHandler.ocr = "") {
+            OCRHandler.ocr := RapidOcr(
+                {models: A_ScriptDir "\plugin\RapidOCR\models"}, 
+                A_ScriptDir "\plugin\RapidOcr\64bit\RapidOcrOnnx.dll"
+            )
         }
-        return false  ; 没有找到目标文字
+        return OCRHandler.ocr
     }
 
+    ; 底层统一识别逻辑：一次性识别所有 BattlePage.png 上的 targetText 坐标
+    static FindTextCoords(targetText) {
+        ; 截图
+        ImagePutFile("联想模拟器", "BattlePage.png")
+
+        ; 初始化 OCR
+        local ocr := OCRHandler.InitOCR()
+        local res := ocr.ocr_from_file("BattlePage.png", , true)
+
+        ; 防止崩溃：如果识别失败或结果为空，直接返回空数组
+        if !IsObject(res) || res.Length = 0 {
+            return []
+        }
+
+        ; 存储所有匹配到的坐标
+        coords := []
+        for block in res {
+            if (block.text = targetText) {
+                x1 := block.boxPoint[1].x
+                y1 := block.boxPoint[1].y
+                x2 := block.boxPoint[3].x
+                y2 := block.boxPoint[3].y
+                coords.Push({x: (x1 + x2) // 2, y: (y1 + y2) // 2})
+            }
+        }
+
+        ; 如果有多个匹配结果，按 X 坐标升序排序（左到右点击）
+        if (coords.Length > 1) {
+            coords := OCRHandler.SortByX(coords)
+        }
+
+        return coords
+    }
+
+    ; 获取第一个匹配目标的坐标（兼容旧版 ocrRecognize 调用）
+    static ocrRecognize(targetText) {
+        coords := OCRHandler.FindTextCoords(targetText)
+        return coords.Length > 0 ? coords[1] : false
+    }
+
+    ; 获取所有匹配目标的坐标（兼容旧版 ocrRecognizeAll 调用）
+    static ocrRecognizeAll(targetText) {
+        return OCRHandler.FindTextCoords(targetText)
+    }
+
+    ; 按 X 坐标升序排序
+    static SortByX(coords) {
+        Loop coords.Length {
+            swapped := false
+            Loop coords.Length - A_Index {
+                i := A_Index
+                j := i + 1
+                if (coords[i].x > coords[j].x) {
+                    tmp := coords[i]
+                    coords[i] := coords[j]
+                    coords[j] := tmp
+                    swapped := true
+                }
+            }
+            if !swapped
+                break
+        }
+        return coords
+    }
 
     static ocrShowText()        ;文字识别展示
     {
@@ -180,6 +227,60 @@ class CombatActions         ; 战斗操作类
         }
     }
     
+    ; 固定希耶尔在2号位
+static CIEL(order) {
+    
+
+    ; 宝具固定位置
+    local cielX := 950   ; 2号位宝具X坐标
+    local cielY := 310
+
+    ; 一次性识别所有“力击”坐标，避免重复点同一张卡
+    local busterCards := OCRHandler.ocrRecognizeAll("力击")
+    local busterIndex := 1  ; 记录当前点击的Buster卡索引
+
+    for idx, step in order {
+        step := StrUpper(step)
+
+        switch step {
+            case "2":  ; 宝具
+                MouseHandler.ClientClick(cielX, cielY)
+                Logger.Log("执行CIEL宝具")
+                Sleep 200
+                
+            case "B":  ; 点击下一张Buster卡
+            {
+                maxRetries := 3  ; 最多重试3次
+                retryCount := 0
+
+                ; 如果Buster卡不够，就重试几次
+                while (busterIndex > busterCards.Length && retryCount < maxRetries) {
+                    Logger.Log("Buster卡不足,正在重新识别... 尝试 #" retryCount+1)
+                    Sleep 300  ; 给OCR一点时间
+                    busterCards := OCRHandler.ocrRecognizeAll("力击")  ; 重新识别
+                    retryCount++
+                }
+
+                ; 再次判断是否有足够的卡
+                if (busterIndex <= busterCards.Length) {
+                    local card := busterCards[busterIndex]
+                    MouseHandler.Click(card.x, card.y)
+                    busterIndex++
+                    Logger.Log("Buster释放")
+                    Sleep 500
+                } else {
+                    Logger.Log("未找到足够的Buster卡,跳过此步骤")
+                }
+            }
+
+
+            default:
+                Logger.Log("未知CIEL步骤: " step)
+        }
+    }
+}
+
+
 
     static MasterSkill_Atlas(targetSlot := 1) {
         Logger.Log("释放技能: MasterSkill_Atlas," targetSlot)  ; 记录日志"")
@@ -338,6 +439,21 @@ local path := A_ScriptDir "\skill_config.txt"   ; 配置文件路径(相对脚�
 
                     if !isRunning
                         return
+
+                case "CIEL":
+                    ; 配置格式: CIEL,step1,step2,step3
+                    if (parts.Length < 4) {
+                        MsgBox "错误: CIEL 指令格式不正确 → " line
+                        return
+                    }
+
+                    ; 提取顺序
+                    step1 := parts[2]
+                    step2 := parts[3]
+                    step3 := parts[4]
+
+                    ; 调用 CombatActions 模块
+                    CombatActions.CIEL([step1, step2, step3])    
 
                 default:
                     if HasMethod(CombatActions,cmd) {   ; 检查是否为 CombatActions 类的方法
