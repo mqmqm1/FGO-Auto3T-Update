@@ -36,7 +36,7 @@ StartBattle() {
         ; 第二轮操作
         if (GameManager.WaitForText("攻击")) {
             Logger.Log("第二轮操作开始")
-            sleep 1000  ; 等待1秒，确保界面稳定
+            sleep 3000  ; 等待1秒，确保界面稳定
             if !isRunning
                 return
         LoadAndExecuteSkillsFromTxt("Round 2")  ;从外部配置文件加载技能并执行
