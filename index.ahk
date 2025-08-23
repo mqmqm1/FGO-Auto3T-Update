@@ -358,7 +358,7 @@ class GameManager       ; 游戏管理类
                 return
             coords := OCRHandler.ocrRecognize(targetText)  ; 调用 OCR 识别目标文本
             if coords {  ; 如果找到目标文本
-               
+               Sleep 300
                 return true  
             }
             if (A_TickCount - startTime > timeoutMs) {  ; 检查是否超时
