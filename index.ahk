@@ -250,13 +250,13 @@ static CIEL(order) {
                 
             case "B":  ; 点击下一张Buster卡
             {
-                maxRetries := 10  ; 最多重试10次
+                maxRetries := 30  ; 最多重试30次
                 retryCount := 0
 
                 ; 如果Buster卡不够，就重试几次
                 while (busterIndex > busterCards.Length && retryCount < maxRetries) {
                     Logger.Log("Buster卡不足,正在重新识别... 尝试 #" retryCount+1)
-                    Sleep 500  ; 给OCR一点时间
+                    Sleep 1000  ; 给OCR一点时间
                     busterCards := OCRHandler.ocrRecognizeAll("力击")  ; 重新识别
                     retryCount++
                 }
