@@ -14,13 +14,13 @@ CIEL,B,2,B
 
 # Round 2
 UseSkill,3,1,2
-UseSkill,3,2,2
 UseSkill,2,1
 UseSkill,2,2
-UseSkill,2,3
-Attack
-CIEL,B,2,B
-
-# Round 3
 Attack
 UseNoblePhantasm,2
+
+# Round 3
+UseSkill,2,3
+UseSkill,3,2,2
+Attack
+CIEL,2,B,B

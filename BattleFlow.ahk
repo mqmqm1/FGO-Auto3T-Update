@@ -34,7 +34,7 @@ StartBattle() {
         }
         
         ; 第二轮操作
-        if (GameManager.WaitForText("御主")) {
+        if (GameManager.WaitForText("菜单")&&GameManager.WaitForText("战斗")) {
             Logger.Log("第二轮操作开始")
             sleep 3000  ; 等待1秒，确保界面稳定
             if !isRunning
@@ -49,7 +49,7 @@ StartBattle() {
         }
         
         ; 第三轮操作
-        if (GameManager.WaitForText("御主")) {
+        if (GameManager.WaitForText("菜单")&&GameManager.WaitForText("战斗")) {
             Logger.Log("第三轮操作开始")
             sleep 1000  ; 等待1秒，确保界面稳定
             if !isRunning
