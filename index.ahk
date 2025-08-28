@@ -250,7 +250,7 @@ static CIEL(order) {
                 
             case "B":  ; 点击下一张Buster卡
             {
-                maxRetries := 30  ; 最多重试30次
+                maxRetries := 200  ; 最多重试200次
                 retryCount := 0
 
                 ; 如果Buster卡不够，就重试几次
